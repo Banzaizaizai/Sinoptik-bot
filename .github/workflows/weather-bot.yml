@@ -1,0 +1,36 @@
+name: Weather forecast to Telegram
+
+on:
+  schedule:
+    # cron — в UTC. Europe/Kyiv = UTC+2 (зима) / UTC+3 (лето, EEST).
+    # 08:00 Kyiv -> 05:00 UTC (зима) / 06:00 UTC (лето, действует летом 29.08)
+    # 20:00 Kyiv -> 17:00 UTC (зима) / 18:00 UTC (лето, действует летом 29.08)
+    # Берём летнее (EEST) время как основное — сейчас действует оно;
+    # смещение на ~1 час в межсезонье не критично для этой задачи.
+    - cron: "0 6 * * *"
+    - cron: "0 18 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  send-forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          ADMIN_CHAT_ID: ${{ secrets.ADMIN_CHAT_ID }}
+          CITY_SLUG: drohobych
+          CITY_NAME: "Дрогобич"
+          TIMEZONE: Europe/Kyiv
+        run: python run_bot.py
