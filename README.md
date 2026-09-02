@@ -1,8 +1,8 @@
 # Weather bot — Дрогобич
 
-Бот дважды в сутки берёт прогноз погоды с [sinoptik.ua/pohoda/drohobych](https://sinoptik.ua/pohoda/drohobych)
-и публикует его в Telegram-канал: **утром — прогноз на сегодня** (актуален весь день до вечера),
-**вечером — на завтра**. Полная спецификация — в [SPEC.md](SPEC.md).
+Бот трижды в сутки берёт прогноз погоды с [sinoptik.ua/pohoda/drohobych](https://sinoptik.ua/pohoda/drohobych)
+и публикует его в Telegram-канал: **08:00 и 13:00 — прогноз на сегодня**, **20:00 — на завтра**.
+Полная спецификация — в [SPEC.md](SPEC.md).
 
 Боевой хостинг — собственная Ubuntu-ВМ (`cron`), не GitHub Actions: sinoptik.ua блокирует
 IP-диапазоны GitHub-раннеров (см. раздел «Хостинг» ниже).
@@ -23,7 +23,7 @@ src/weather_bot/
   main.py                     # оркестрация, логирование, обработка ошибок
 run_bot.py                     # точка входа (используется Task Scheduler'ом)
 tests/                          # юнит-тесты на реальных HTML-фикстурах
-scripts/register_task_scheduler.ps1   # регистрация запуска 2 раза в сутки
+scripts/register_task_scheduler.ps1   # регистрация запуска 3 раза в сутки
 ```
 
 ## Установка
@@ -93,11 +93,12 @@ python3 -m venv .venv
 cp .env.example .env && nano .env   # заполнить токен и chat_id
 ```
 
-Крон (`crontab -e`), утро -> сегодня, вечер -> завтра, время — Europe/Kyiv:
+Крон (`crontab -e`), 08:00 и 13:00 -> сегодня, 20:00 -> завтра, время — Europe/Kyiv:
 
 ```
 CRON_TZ=Europe/Kyiv
 0 8 * * * cd /home/joshua/weather-bot && /home/joshua/weather-bot/.venv/bin/python run_bot.py --mode today >> /home/joshua/weather-bot/logs/cron.log 2>&1
+0 13 * * * cd /home/joshua/weather-bot && /home/joshua/weather-bot/.venv/bin/python run_bot.py --mode today >> /home/joshua/weather-bot/logs/cron.log 2>&1
 0 20 * * * cd /home/joshua/weather-bot && /home/joshua/weather-bot/.venv/bin/python run_bot.py --mode tomorrow >> /home/joshua/weather-bot/logs/cron.log 2>&1
 ```
 
@@ -111,9 +112,10 @@ CRON_TZ=Europe/Kyiv
 powershell -ExecutionPolicy Bypass -File .\scripts\register_task_scheduler.ps1
 ```
 
-Создаёт два задания: `WeatherBotDrohobych-Morning` (`--mode today`, 08:00) и
-`WeatherBotDrohobych-Evening` (`--mode tomorrow`, 20:00). Проверить/запустить
-вручную/удалить — см. вывод скрипта или `taskschd.msc`.
+Создаёт три задания: `WeatherBotDrohobych-Morning` (`--mode today`, 08:00),
+`WeatherBotDrohobych-Midday` (`--mode today`, 13:00) и `WeatherBotDrohobych-Evening`
+(`--mode tomorrow`, 20:00). Проверить/запустить вручную/удалить — см. вывод скрипта
+или `taskschd.msc`.
 
 ### GitHub Actions (сейчас не используется как планировщик)
 

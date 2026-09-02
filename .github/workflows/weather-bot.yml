@@ -8,12 +8,14 @@ name: Weather forecast to Telegram
 on:
   schedule:
     # cron — в UTC. Europe/Kyiv = UTC+2 (зима) / UTC+3 (лето, EEST).
-    # 08:00 Kyiv -> 05:00 UTC (зима) / 06:00 UTC (лето)
-    # 20:00 Kyiv -> 17:00 UTC (зима) / 18:00 UTC (лето)
+    # 08:00 Kyiv -> 06:00 UTC (зима) / 05:00 UTC (лето)
+    # 13:00 Kyiv -> 11:00 UTC (зима) / 10:00 UTC (лето)
+    # 20:00 Kyiv -> 18:00 UTC (зима) / 17:00 UTC (лето)
     # Берём летнее (EEST) время как основное; смещение на ~1 час в межсезонье
     # не критично для этой задачи.
-    - cron: "0 6 * * *" # утро Kyiv -> прогноз на сегодня
-    - cron: "0 18 * * *" # вечер Kyiv -> прогноз на завтра
+    - cron: "0 5 * * *" # утро Kyiv -> прогноз на сегодня
+    - cron: "0 10 * * *" # день Kyiv -> прогноз на сегодня
+    - cron: "0 17 * * *" # вечер Kyiv -> прогноз на завтра
   workflow_dispatch:
     inputs:
       mode:
@@ -41,10 +43,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "value=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "0 6 * * *" ]; then
-            echo "value=today" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "${{ github.event.schedule }}" = "0 17 * * *" ]; then
             echo "value=tomorrow" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=today" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run bot
