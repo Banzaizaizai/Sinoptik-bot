@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from weather_bot.parser import ParseError, parse_tomorrow
+from weather_bot.parser import ParseError, parse_forecast_day
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -14,7 +14,7 @@ def _load(name: str) -> str:
 
 def test_parse_today_page_smoke():
     html = _load("drohobych_today.html")
-    forecast = parse_tomorrow(
+    forecast = parse_forecast_day(
         html,
         source_url="https://sinoptik.ua/pohoda/drohobych",
         city_name="Дрогобич",
@@ -48,9 +48,9 @@ def test_parse_today_page_smoke():
     assert "Народний прогноз" not in (forecast.summary_text or "")
 
 
-def test_parse_tomorrow_page_weekday_label():
+def test_parse_forecast_day_page_weekday_label():
     html = _load("drohobych_tomorrow.html")
-    forecast = parse_tomorrow(
+    forecast = parse_forecast_day(
         html,
         source_url="https://sinoptik.ua/pohoda/drohobych/subota",
         city_name="Дрогобич",
@@ -64,7 +64,7 @@ def test_parse_tomorrow_page_weekday_label():
 
 def test_parse_error_on_garbage_html():
     with pytest.raises(ParseError):
-        parse_tomorrow(
+        parse_forecast_day(
             "<html><body>нет данных</body></html>",
             source_url="https://sinoptik.ua/pohoda/drohobych",
             city_name="Дрогобич",

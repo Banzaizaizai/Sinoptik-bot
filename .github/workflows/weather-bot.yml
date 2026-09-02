@@ -1,15 +1,26 @@
+# ПРИМЕЧАНИЕ: этот workflow сейчас НЕ используется как боевой планировщик —
+# sinoptik.ua блокирует IP-диапазоны GitHub-раннеров (Azure), запросы падают
+# по ConnectTimeout. Боевой запуск перенесён на собственную ВМ (cron). Файл
+# оставлен рабочим на случай самостоятельного runner'а или смены источника
+# данных на API, не блокирующий облачные IP — тогда достаточно включить schedule.
 name: Weather forecast to Telegram
 
 on:
   schedule:
     # cron — в UTC. Europe/Kyiv = UTC+2 (зима) / UTC+3 (лето, EEST).
-    # 08:00 Kyiv -> 05:00 UTC (зима) / 06:00 UTC (лето, действует летом 29.08)
-    # 20:00 Kyiv -> 17:00 UTC (зима) / 18:00 UTC (лето, действует летом 29.08)
-    # Берём летнее (EEST) время как основное — сейчас действует оно;
-    # смещение на ~1 час в межсезонье не критично для этой задачи.
-    - cron: "0 6 * * *"
-    - cron: "0 18 * * *"
-  workflow_dispatch: {}
+    # 08:00 Kyiv -> 05:00 UTC (зима) / 06:00 UTC (лето)
+    # 20:00 Kyiv -> 17:00 UTC (зима) / 18:00 UTC (лето)
+    # Берём летнее (EEST) время как основное; смещение на ~1 час в межсезонье
+    # не критично для этой задачи.
+    - cron: "0 6 * * *" # утро Kyiv -> прогноз на сегодня
+    - cron: "0 18 * * *" # вечер Kyiv -> прогноз на завтра
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "today — прогноз на сегодня, tomorrow — на завтра"
+        type: choice
+        options: [today, tomorrow]
+        default: tomorrow
 
 jobs:
   send-forecast:
@@ -25,6 +36,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Determine mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 6 * * *" ]; then
+            echo "value=today" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=tomorrow" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -33,4 +55,4 @@ jobs:
           CITY_SLUG: drohobych
           CITY_NAME: "Дрогобич"
           TIMEZONE: Europe/Kyiv
-        run: python run_bot.py
+        run: python run_bot.py --mode ${{ steps.mode.outputs.value }}

@@ -19,7 +19,6 @@ def _sample_forecast() -> ForecastDay:
     return ForecastDay(
         city_name="Дрогобич",
         forecast_date=date(2026, 8, 29),
-        weekday_label="субота",
         source_url="https://sinoptik.ua/pohoda/drohobych/subota",
         sunrise=time(6, 37),
         sunset=time(20, 15),

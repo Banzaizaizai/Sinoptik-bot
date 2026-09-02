@@ -1,7 +1,11 @@
 # Weather bot — Дрогобич
 
-Бот дважды в сутки берёт прогноз погоды на завтра с [sinoptik.ua/pohoda/drohobych](https://sinoptik.ua/pohoda/drohobych)
-и публикует его в Telegram-канал. Полная спецификация — в [SPEC.md](SPEC.md).
+Бот дважды в сутки берёт прогноз погоды с [sinoptik.ua/pohoda/drohobych](https://sinoptik.ua/pohoda/drohobych)
+и публикует его в Telegram-канал: **утром — прогноз на сегодня** (актуален весь день до вечера),
+**вечером — на завтра**. Полная спецификация — в [SPEC.md](SPEC.md).
+
+Боевой хостинг — собственная Ubuntu-ВМ (`cron`), не GitHub Actions: sinoptik.ua блокирует
+IP-диапазоны GitHub-раннеров (см. раздел «Хостинг» ниже).
 
 > ⚠️ Данные на sinoptik.ua даются с шагом **3 часа** (00:00, 03:00, ... 21:00), не почасово.
 > Это ограничение источника, не бота — см. SPEC.md, раздел 2.
@@ -57,7 +61,8 @@ TIMEZONE=Europe/Kyiv
 ## Запуск вручную
 
 ```powershell
-.\.venv\Scripts\python.exe run_bot.py
+.\.venv\Scripts\python.exe run_bot.py --mode today      # прогноз на сегодня
+.\.venv\Scripts\python.exe run_bot.py --mode tomorrow    # прогноз на завтра (по умолчанию)
 ```
 
 Логи пишутся в `logs/weather_bot.log` и в stdout.
@@ -72,15 +77,50 @@ TIMEZONE=Europe/Kyiv
 сеть не требуется. Если сайт поменяет вёрстку, `parser.py` начнёт кидать `ParseError`
 с понятным сообщением — тогда фикстуры нужно обновить и подправить парсер.
 
-## Запуск по расписанию (2 раза в сутки, 08:00 и 20:00 Europe/Kyiv)
+## Хостинг: боевой запуск на Ubuntu-ВМ (cron)
+
+GitHub Actions для этого не подходит: sinoptik.ua блокирует IP-диапазоны GitHub-раннеров
+(запросы падают по `ConnectTimeout`, проверено). Поэтому бот крутится на отдельной ВМ.
+
+Настройка на ВМ (Ubuntu):
+
+```bash
+sudo apt-get install -y python3-venv python3-pip git
+git clone https://github.com/Banzaizaizai/Sinoptik-bot.git ~/weather-bot
+cd ~/weather-bot
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env && nano .env   # заполнить токен и chat_id
+```
+
+Крон (`crontab -e`), утро -> сегодня, вечер -> завтра, время — Europe/Kyiv:
+
+```
+CRON_TZ=Europe/Kyiv
+0 8 * * * cd /home/joshua/weather-bot && /home/joshua/weather-bot/.venv/bin/python run_bot.py --mode today >> /home/joshua/weather-bot/logs/cron.log 2>&1
+0 20 * * * cd /home/joshua/weather-bot && /home/joshua/weather-bot/.venv/bin/python run_bot.py --mode tomorrow >> /home/joshua/weather-bot/logs/cron.log 2>&1
+```
+
+После обновления кода на ВМ: `git pull && .venv/bin/pip install -r requirements.txt`.
+
+### Альтернатива: Windows Task Scheduler
+
+Если бот когда-нибудь снова понадобится на локальной Windows-машине:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\register_task_scheduler.ps1
 ```
 
-Создаёт два задания в Windows Task Scheduler: `WeatherBotDrohobych-Morning` и
-`WeatherBotDrohobych-Evening`. Проверить/запустить вручную/удалить — см. вывод скрипта
-или `taskschd.msc`.
+Создаёт два задания: `WeatherBotDrohobych-Morning` (`--mode today`, 08:00) и
+`WeatherBotDrohobych-Evening` (`--mode tomorrow`, 20:00). Проверить/запустить
+вручную/удалить — см. вывод скрипта или `taskschd.msc`.
+
+### GitHub Actions (сейчас не используется как планировщик)
+
+`.github/workflows/weather-bot.yml` рабочий, но `schedule`-триггеры фактически не
+срабатывают из-за блокировки IP — оставлен на случай самостоятельного runner'а или
+смены источника данных. Ручной запуск (`workflow_dispatch`) с выбором режима работает,
+но так же упрётся в блокировку сети при обращении к sinoptik.ua.
 
 ## Если сломался парсинг
 

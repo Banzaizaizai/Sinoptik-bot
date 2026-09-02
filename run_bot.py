@@ -1,7 +1,8 @@
-"""Точка входа для запуска бота (в т.ч. из Windows Task Scheduler).
+"""Точка входа для запуска бота (в т.ч. из cron / Windows Task Scheduler).
 
 Использование:
-    .venv\\Scripts\\python.exe run_bot.py
+    .venv\\Scripts\\python.exe run_bot.py --mode today      # утренний запуск
+    .venv\\Scripts\\python.exe run_bot.py --mode tomorrow   # вечерний запуск
 """
 
 import sys

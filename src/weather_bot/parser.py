@@ -18,7 +18,7 @@ class ParseError(RuntimeError):
     """Вёрстка sinoptik.ua не соответствует ожидаемой — парсер требует ревизии."""
 
 
-def parse_tomorrow(html: str, *, source_url: str, city_name: str, forecast_date: date) -> ForecastDay:
+def parse_forecast_day(html: str, *, source_url: str, city_name: str, forecast_date: date) -> ForecastDay:
     soup = BeautifulSoup(html, "html.parser")
 
     table = _find_forecast_table(soup)
@@ -51,13 +51,11 @@ def parse_tomorrow(html: str, *, source_url: str, city_name: str, forecast_date:
         )
 
     sunrise, sunset = _find_sunrise_sunset(soup)
-    weekday_label = _find_weekday_label(soup) or ""
     summary_text = _find_summary(table)
 
     return ForecastDay(
         city_name=city_name,
         forecast_date=forecast_date,
-        weekday_label=weekday_label,
         source_url=source_url,
         sunrise=sunrise,
         sunset=sunset,
@@ -160,17 +158,6 @@ def _parse_time(text: str) -> time | None:
     if not match:
         return None
     return time(int(match.group(1)), int(match.group(2)))
-
-
-def _find_weekday_label(soup: BeautifulSoup) -> str | None:
-    for p in soup.find_all("p"):
-        if p.get_text(strip=True).startswith("Схід"):
-            date_div = p.parent.find_previous_sibling("div") if p.parent else None
-            if date_div:
-                ps = date_div.find_all("p")
-                if ps:
-                    return ps[0].get_text(strip=True)
-    return None
 
 
 def _find_summary(table: Tag) -> str | None:

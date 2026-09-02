@@ -48,6 +48,14 @@ def _get(client: httpx.Client, url: str) -> str:
     return resp.text
 
 
+def fetch_today_html(city_slug: str) -> tuple[str, str]:
+    """Возвращает (html, url) страницы прогноза на сегодня."""
+    url = f"{BASE_URL}/pohoda/{city_slug}"
+    with _client() as client:
+        html = _get(client, url)
+    return html, url
+
+
 def fetch_tomorrow_html(city_slug: str) -> tuple[str, str]:
     """Возвращает (html, url) страницы прогноза на завтра.
 

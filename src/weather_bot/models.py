@@ -19,16 +19,26 @@ class HourSlot:
     precip_probability_pct: int | None  # None, если сайт не даёт значение ("-")
 
 
+_UA_WEEKDAYS = ["понеділок", "вівторок", "середа", "четвер", "п'ятниця", "субота", "неділя"]
+
+
 @dataclass(frozen=True)
 class ForecastDay:
     city_name: str
     forecast_date: date
-    weekday_label: str  # "субота", как на сайте
     source_url: str
     sunrise: time | None
     sunset: time | None
     summary_text: str | None
     slots: list[HourSlot]
+
+    @property
+    def weekday_label(self) -> str:
+        # Считаем из forecast_date, а не парсим со страницы: на "сегодняшней"
+        # странице sinoptik.ua вместо блока с днём недели показан виджет
+        # текущей погоды — рядом с восходом/закатом там нет надёжного
+        # текстового маркера дня недели.
+        return _UA_WEEKDAYS[self.forecast_date.weekday()]
 
     @property
     def min_temp_c(self) -> int:
