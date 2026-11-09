@@ -20,3 +20,17 @@ def test_tomorrow_mode_targets_next_date():
 def test_fetchers_map_to_expected_functions():
     assert FETCHERS["today"] is fetch_today_html
     assert FETCHERS["tomorrow"] is fetch_tomorrow_html
+
+
+def test_channel_menu_button(monkeypatch):
+    from weather_bot.main import channel_menu_markup
+
+    monkeypatch.delenv("BOT_USERNAME", raising=False)
+    url = channel_menu_markup()["inline_keyboard"][0][0]["url"]
+    assert url == "https://t.me/mysinoptikweather_bot?start=menu"
+
+    monkeypatch.setenv("BOT_USERNAME", "@other_bot")
+    assert channel_menu_markup()["inline_keyboard"][0][0]["url"].startswith("https://t.me/other_bot?")
+
+    monkeypatch.setenv("BOT_USERNAME", "")
+    assert channel_menu_markup() is None

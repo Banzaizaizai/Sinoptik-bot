@@ -21,7 +21,7 @@ class TelegramSendError(RuntimeError):
     wait=wait_exponential(multiplier=1, min=2, max=20),
     retry=retry_if_exception_type((httpx.TransportError, httpx.HTTPStatusError)),
 )
-def send_message(bot_token: str, chat_id: str, text: str) -> int:
+def send_message(bot_token: str, chat_id: str, text: str, reply_markup: dict | None = None) -> int:
     """Отправляет сообщение в Telegram, возвращает message_id."""
     if len(text) > MAX_MESSAGE_LENGTH:
         raise TelegramSendError(
@@ -36,6 +36,8 @@ def send_message(bot_token: str, chat_id: str, text: str) -> int:
         "parse_mode": "HTML",
         "disable_web_page_preview": True,
     }
+    if reply_markup is not None:
+        payload["reply_markup"] = reply_markup
 
     with httpx.Client(timeout=15.0) as client:
         resp = client.post(url, json=payload)

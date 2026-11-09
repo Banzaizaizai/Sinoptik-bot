@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -21,6 +22,23 @@ FETCHERS = {
     "today": fetch_today_html,
     "tomorrow": fetch_tomorrow_html,
 }
+
+
+def channel_menu_markup() -> dict | None:
+    """URL button under channel posts that opens the bot's private chat.
+
+    A channel can't host an interactive menu (subscribers can't send commands),
+    so the button deep-links to the bot (``/start menu``) where the menu lives.
+    Set BOT_USERNAME= (empty) in .env to disable the button.
+    """
+    username = os.environ.get("BOT_USERNAME", "mysinoptikweather_bot").strip().lstrip("@")
+    if not username:
+        return None
+    return {
+        "inline_keyboard": [[
+            {"text": "🤖 Меню бота", "url": f"https://t.me/{username}?start=menu"},
+        ]]
+    }
 
 
 def _target_date(mode: str, tz: ZoneInfo) -> date:
@@ -80,7 +98,12 @@ def run(argv: list[str] | None = None) -> int:
             forecast_date=target_date,
         )
         message = format_message(forecast)
-        send_message(config.telegram_bot_token, config.telegram_channel_id, message)
+        send_message(
+            config.telegram_bot_token,
+            config.telegram_channel_id,
+            message,
+            reply_markup=channel_menu_markup(),
+        )
     except (FetchError, ParseError, TelegramSendError) as exc:
         logger.exception("Не удалось подготовить/отправить прогноз")
         _notify_admin(config, exc)
