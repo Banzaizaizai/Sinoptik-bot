@@ -1,4 +1,4 @@
-"""Entry point of the interactive (long-polling) bot; managed by systemd.
+r"""Entry point of the interactive (long-polling) bot; managed by systemd.
 
 Usage:
     .venv\Scripts\python.exe run_interactive.py
