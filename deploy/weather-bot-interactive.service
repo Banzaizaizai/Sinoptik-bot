@@ -1,0 +1,18 @@
+[Unit]
+Description=Weather bot (interactive)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=joshua
+WorkingDirectory=/home/joshua/weather-bot
+EnvironmentFile=/home/joshua/weather-bot/.env
+Environment=PYTHONUNBUFFERED=1 PYTHONUTF8=1
+ExecStart=/home/joshua/weather-bot/.venv/bin/python run_interactive.py
+Restart=always
+RestartSec=10
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

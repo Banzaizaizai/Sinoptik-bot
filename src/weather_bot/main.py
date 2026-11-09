@@ -2,19 +2,16 @@ from __future__ import annotations
 
 import argparse
 import logging
-import logging.handlers
 import sys
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .config import Config
 from .fetcher import FetchError, fetch_today_html, fetch_tomorrow_html
 from .formatter import format_message
+from .logging_setup import LOG_DIR, setup_logging  # noqa: F401  (LOG_DIR — для совместимости)
 from .parser import ParseError, parse_forecast_day
 from .telegram_sender import TelegramSendError, send_message
-
-LOG_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
 
 logger = logging.getLogger("weather_bot")
 
@@ -32,20 +29,7 @@ def _target_date(mode: str, tz: ZoneInfo) -> date:
 
 
 def _setup_logging() -> None:
-    LOG_DIR.mkdir(exist_ok=True)
-    handler = logging.handlers.RotatingFileHandler(
-        LOG_DIR / "weather_bot.log", maxBytes=1_000_000, backupCount=5, encoding="utf-8"
-    )
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-    handler.setFormatter(formatter)
-
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setFormatter(formatter)
-
-    root = logging.getLogger()
-    root.setLevel(logging.INFO)
-    root.addHandler(handler)
-    root.addHandler(stream_handler)
+    setup_logging("weather_bot.log")
 
 
 def _notify_admin(config: Config, error: Exception) -> None:

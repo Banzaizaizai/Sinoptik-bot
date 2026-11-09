@@ -47,3 +47,25 @@ class ForecastDay:
     @property
     def max_temp_c(self) -> int:
         return max(s.temp_c for s in self.slots)
+
+
+@dataclass(frozen=True)
+class DaySummary:
+    """Краткая сводка по дню из таб-бара дней (страницы "тиждень"/"10 днів")."""
+
+    date: date
+    weekday: str  # как на сайте, апостроф нормализован к ASCII: "п'ятниця"
+    t_min: int
+    t_max: int
+    condition: str  # может содержать "\n" ("Суцільна хмарність,\nдощ"); "" если нет
+
+
+@dataclass(frozen=True)
+class LocationState:
+    """Локация, встроенная в JSON-состояние страницы /pohoda/<slug>."""
+
+    slug: str
+    title: str
+    description: str | None
+    lat: float | None
+    lng: float | None

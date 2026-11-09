@@ -11,6 +11,17 @@ from .models import ForecastDay, HourSlot
 TIME_CELL_RE = re.compile(r"^\d{1,2}:00$")
 DEGREE_RE = re.compile(r"[+\-−]?\d+")
 
+# Вкладки дней на sinoptik.ua помечены role="menuitem" и содержат в aria-label
+# диапазон "від X° до Y°" — по этому признаку отличаем их от других menuitem
+# на странице (переключатели "Тиждень"/"10 днів" тоже role="menuitem", но
+# без диапазона температур в aria-label). Группы 1/2 — мин./макс. температура.
+DAY_TAB_RANGE_RE = re.compile(r":\s*від\s*([+\-−]?\d+)°\s*до\s*([+\-−]?\d+)°")
+
+# Страницы "сегодня"/"завтра" дают 8 срезов (0:00..21:00), страницы дней
+# начиная с послезавтра — 4 среза (2:00, 8:00, 14:00, 20:00). Порядок важен:
+# сначала ищем подробную таблицу.
+ACCEPTED_SLOT_COUNTS = (8, 4)
+
 EXPECTED_DATA_ROWS = 7  # иконка, темп., ощущается, давление, влажность, ветер, осадки
 
 
@@ -65,21 +76,31 @@ def parse_forecast_day(html: str, *, source_url: str, city_name: str, forecast_d
 
 
 def _find_forecast_table(soup: BeautifulSoup) -> Tag:
-    for table in soup.find_all("table"):
-        thead = table.find("thead")
-        if not thead:
-            continue
-        head_rows = thead.find_all("tr")
-        if len(head_rows) < 2:
-            continue
-        cells = head_rows[1].find_all("td")
-        texts = [c.get_text(strip=True) for c in cells]
-        if len(texts) == 8 and all(TIME_CELL_RE.match(t) for t in texts):
-            return table
+    tables = soup.find_all("table")
+    for slot_count in ACCEPTED_SLOT_COUNTS:
+        for table in tables:
+            texts = _time_header_texts(table)
+            if (
+                texts is not None
+                and len(texts) == slot_count
+                and all(TIME_CELL_RE.match(t) for t in texts)
+            ):
+                return table
     raise ParseError(
-        "Не найдена таблица почасового прогноза (ожидалась thead-строка из 8 ячеек "
-        "вида '0:00'..'21:00'). Вероятно, изменилась вёрстка sinoptik.ua."
+        "Не найдена таблица почасового прогноза (ожидалась thead-строка из 8 или 4 "
+        "ячеек вида 'H:00'). Вероятно, изменилась вёрстка sinoptik.ua."
     )
+
+
+def _time_header_texts(table: Tag) -> list[str] | None:
+    """Тексты второй строки thead (строка с часами) или None, если её нет."""
+    thead = table.find("thead")
+    if not thead:
+        return None
+    head_rows = thead.find_all("tr")
+    if len(head_rows) < 2:
+        return None
+    return [c.get_text(strip=True) for c in head_rows[1].find_all("td")]
 
 
 def _extract_time_labels(table: Tag) -> list[str]:
