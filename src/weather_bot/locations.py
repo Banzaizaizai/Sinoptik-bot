@@ -11,6 +11,7 @@ Only ``/pohoda/...`` pages are fetched (via the injected ``fetch_page``); sinopt
 
 from __future__ import annotations
 
+import dataclasses
 import math
 import re
 import sys
@@ -140,7 +141,16 @@ def _default_parse(html: str) -> dict[str, Any] | None:
 
 
 def _location_from_state(state: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Accept either the location object itself or a wrapper with a "location" key."""
+    """Accept a LocationState (from multiday.parse_location_state), the raw
+    location object, or a wrapper with a "location" key."""
+    if dataclasses.is_dataclass(state) and not isinstance(state, type):
+        return {
+            "id": state.slug,
+            "title": state.title,
+            "description": state.description,
+            "lat": state.lat,
+            "lng": state.lng,
+        }
     if not isinstance(state, dict):
         return None
     loc = state.get("location") if isinstance(state.get("location"), dict) else state

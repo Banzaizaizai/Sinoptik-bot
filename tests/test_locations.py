@@ -185,3 +185,28 @@ def test_storage_rejects_bad_slug(tmp_path) -> None:
     storage.migrate(db)
     with pytest.raises(ValueError):
         storage.add_location(db, 1, "X", "../api/x")
+
+
+def test_integration_with_real_parse_location_state():
+    """Regression: resolve_candidates must accept the LocationState that the
+    real multiday.parse_location_state returns (was silently dropping all)."""
+    from pathlib import Path
+
+    import httpx
+
+    from weather_bot.locations import clear_cache, resolve_candidates
+    from weather_bot.multiday import parse_location_state
+
+    html = (Path(__file__).parent / "fixtures" / "drohobych_week.html").read_text(encoding="utf-8")
+    state = parse_location_state(html)
+    geo = {"results": [{"name": "Дрогобич", "latitude": state.lat, "longitude": state.lng, "population": 73682}]}
+    transport = httpx.MockTransport(lambda req: httpx.Response(200, json=geo))
+
+    clear_cache()
+    cands = resolve_candidates(
+        "Дрогобич",
+        fetch_page=lambda slug: html if slug == "drohobych" else None,
+        parse_state=parse_location_state,
+        transport=transport,
+    )
+    assert [c.slug for c in cands] == ["drohobych"]
