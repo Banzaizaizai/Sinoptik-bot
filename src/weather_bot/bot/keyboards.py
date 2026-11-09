@@ -246,3 +246,14 @@ def sub_delete_confirm(sub_id: int) -> InlineKeyboardMarkup:
         Btn(texts.BTN_DELETE_YES, callback_data=encode("Sxy", sub_id)),
         Btn(texts.BTN_CANCEL_PLAIN, callback_data=encode("Sv", sub_id)),
     ]])
+
+
+def persistent_menu() -> "ReplyKeyboardMarkup":
+    """Reply keyboard with one always-visible "🏠 Меню" button below the input."""
+    from telegram import KeyboardButton, ReplyKeyboardMarkup
+
+    return ReplyKeyboardMarkup(
+        [[KeyboardButton(texts.MENU_BUTTON)]],
+        resize_keyboard=True,
+        is_persistent=True,
+    )

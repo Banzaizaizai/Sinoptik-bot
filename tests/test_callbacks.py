@@ -48,3 +48,11 @@ def test_decode_rejects(data):
 def test_encode_rejects(verb, args):
     with pytest.raises(ValueError):
         encode(verb, *args)
+
+
+def test_persistent_menu_keyboard():
+    from weather_bot.bot import keyboards, texts
+
+    markup = keyboards.persistent_menu()
+    assert markup.keyboard[0][0].text == texts.MENU_BUTTON
+    assert markup.is_persistent and markup.resize_keyboard

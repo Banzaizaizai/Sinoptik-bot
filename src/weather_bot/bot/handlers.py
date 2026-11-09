@@ -332,6 +332,10 @@ async def cb_cancel(update: Update, context: Ctx, cb: Callback) -> None:
 
 async def cmd_start(update: Update, context: Ctx) -> None:
     clear_state(context)
+    # Attach the persistent "🏠 Меню" reply-keyboard button (needs its own message).
+    await context.bot.send_message(
+        chat_id_of(update), texts.KEYBOARD_READY, reply_markup=kb.persistent_menu()
+    )
     await render_menu(update, context)
 
 
@@ -570,6 +574,11 @@ async def on_text(update: Update, context: Ctx) -> None:
     """Free text: dispatch by ``user_data['await']``; otherwise show the menu."""
     msg = update.effective_message
     if msg is None or msg.text is None:
+        return
+    if msg.text.strip() == texts.MENU_BUTTON:
+        # The persistent button always wins over any pending text-input state.
+        clear_state(context)
+        await render_menu(update, context)
         return
     state = (context.user_data or {}).get(AWAIT)
     handler = TEXT_STATES.get(state) if state else None

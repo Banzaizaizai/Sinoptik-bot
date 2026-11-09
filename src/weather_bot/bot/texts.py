@@ -192,3 +192,7 @@ def days_label(mask: int) -> str:
     if mask == 96:
         return DAYS_WEEKEND
     return ",".join(WEEKDAYS_SHORT[b] for b in range(7) if mask >> b & 1)
+
+# Persistent reply-keyboard button under the input field (always visible).
+MENU_BUTTON = "🏠 Меню"
+KEYBOARD_READY = "Кнопка «🏠 Меню» тепер завжди під полем вводу."
